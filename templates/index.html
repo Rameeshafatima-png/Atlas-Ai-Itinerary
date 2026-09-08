@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Planner</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="background-orb orb-one"></div>
+    <div class="background-orb orb-two"></div>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">✈</div>
+            <div>
+                <strong>TravelAI</strong>
+                <span>Gemini Prompt Lab</span>
+            </div>
+        </div>
+        <div class="badge">AI Travel Planner</div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <div>
+                <p class="eyebrow">PERSONALIZED TRAVEL PLANNING</p>
+                <h1>Plan your next trip<br><span>with Gemini AI.</span></h1>
+                <p class="hero-text">
+                    Compare Zero-Shot, Few-Shot, and Structured Reasoning prompting
+                    techniques and see how each approach creates your itinerary.
+                </p>
+            </div>
+            <div class="hero-card">
+                <div class="mini-icon">✦</div>
+                <strong>3 Prompting Techniques</strong>
+                <p>One traveler profile. Three AI approaches.</p>
+            </div>
+        </section>
+
+        <section class="workspace">
+            <div class="form-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">TRAVEL PROFILE</p>
+                        <h2>Tell us about your trip</h2>
+                    </div>
+                    <span class="step">01</span>
+                </div>
+
+                <form id="travelForm">
+                    <div class="grid two">
+                        <label>
+                            <span>Your Name</span>
+                            <input id="name" type="text" placeholder="e.g. Alex" required>
+                        </label>
+
+                        <label>
+                            <span>Destination</span>
+                            <input id="destination" type="text" placeholder="e.g. Dubai" required>
+                        </label>
+                    </div>
+
+                    <div class="grid two">
+                        <label>
+                            <span>Number of Days</span>
+                            <input id="days" type="number" min="1" max="30" value="4" required>
+                        </label>
+
+                        <label>
+                            <span>Budget (USD)</span>
+                            <input id="budget" type="number" min="0" step="50" placeholder="800" required>
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Interests</span>
+                        <input id="interests" type="text"
+                               placeholder="Food, Beaches, Shopping, History" required>
+                        <small>Separate multiple interests with commas.</small>
+                    </label>
+
+                    <label>
+                        <span>Travel Style</span>
+                        <select id="travelStyle" required>
+                            <option value="">Select travel style</option>
+                            <option>Solo</option>
+                            <option>Family</option>
+                            <option>Friends</option>
+                        </select>
+                    </label>
+
+                    <div class="technique-heading">
+                        <div>
+                            <p class="eyebrow">PROMPTING TECHNIQUE</p>
+                            <h3>Choose an approach</h3>
+                        </div>
+                    </div>
+
+                    <div class="techniques">
+                        <button type="button" class="technique active" data-technique="zero-shot">
+                            <span class="technique-number">01</span>
+                            <strong>Zero-Shot</strong>
+                            <small>No examples. Gemini receives only the task and traveler profile.</small>
+                        </button>
+
+                        <button type="button" class="technique" data-technique="few-shot">
+                            <span class="technique-number">02</span>
+                            <strong>Few-Shot</strong>
+                            <small>Gemini learns the desired style from sample traveler plans.</small>
+                        </button>
+
+                        <button type="button" class="technique" data-technique="structured">
+                            <span class="technique-number">03</span>
+                            <strong>Structured Reasoning</strong>
+                            <small>Gemini follows explicit planning steps with brief justifications.</small>
+                        </button>
+                    </div>
+
+                    <button id="generateBtn" class="generate-btn" type="submit">
+                        <span>Generate Itinerary</span>
+                        <span class="arrow">→</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="result-card">
+                <div class="result-header">
+                    <div>
+                        <p class="eyebrow">GEMINI OUTPUT</p>
+                        <h2>Your Travel Plan</h2>
+                    </div>
+                    <span id="resultTechnique" class="result-pill">Zero-Shot</span>
+                </div>
+
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">✈</div>
+                    <h3>Your itinerary will appear here</h3>
+                    <p>
+                        Fill in your travel details, select a prompting technique,
+                        and generate your personalized plan.
+                    </p>
+                </div>
+
+                <div id="loadingState" class="loading-state hidden">
+                    <div class="spinner"></div>
+                    <h3>Gemini is planning your trip...</h3>
+                    <p>Creating your personalized itinerary.</p>
+                </div>
+
+                <article id="result" class="result hidden"></article>
+            </div>
+        </section>
+
+        <section class="comparison">
+            <div class="section-heading centered">
+                <div>
+                    <p class="eyebrow">ASSIGNMENT OBJECTIVE</p>
+                    <h2>Compare the prompting techniques</h2>
+                </div>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="info-card">
+                    <span>01</span>
+                    <h3>Zero-Shot</h3>
+                    <p>Tests Gemini's ability to create a useful itinerary without examples.</p>
+                </div>
+                <div class="info-card">
+                    <span>02</span>
+                    <h3>Few-Shot</h3>
+                    <p>Uses examples to guide the structure, tone, and level of personalization.</p>
+                </div>
+                <div class="info-card">
+                    <span>03</span>
+                    <h3>Structured Reasoning</h3>
+                    <p>Uses explicit planning criteria while requesting only concise justifications.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <span>AI Travel Planner</span>
+            <span>Built with Python, FastAPI & Gemini API</span>
+        </footer>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
