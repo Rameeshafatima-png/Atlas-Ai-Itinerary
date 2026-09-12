@@ -1,190 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Travel Planner</title>
-    <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — Trip Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="background-orb orb-one"></div>
-    <div class="background-orb orb-two"></div>
 
-    <header class="topbar">
-        <div class="brand">
-            <div class="brand-icon">✈</div>
-            <div>
-                <strong>TravelAI</strong>
-                <span>Gemini Prompt Lab</span>
-            </div>
+<div class="grain"></div>
+
+<header class="masthead">
+  <div class="masthead-mark">
+    <svg viewBox="0 0 40 40" class="compass" aria-hidden="true">
+      <circle cx="20" cy="20" r="17.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M20 6 L23.5 18 L20 34 L16.5 18 Z" fill="currentColor"/>
+      <circle cx="20" cy="20" r="2" fill="var(--paper)"/>
+    </svg>
+    <span class="wordmark">Atlas</span>
+  </div>
+  <p class="masthead-tag">A trip, drafted while you wait</p>
+</header>
+
+<main class="deck">
+
+  <!-- ============ APPLICATION FORM (left) ============ -->
+  <section class="panel form-panel" aria-labelledby="form-title">
+    <div class="panel-inner">
+      <h1 id="form-title">Where are we sending you?</h1>
+      <p class="panel-lede">Tell Atlas the shape of the trip. It drafts a day-by-day plan sized to your time and your budget.</p>
+
+      <form id="trip-form" novalidate>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Traveler</label>
+            <input type="text" id="name" name="name" placeholder="Your name" required minlength="1">
+          </div>
+          <div class="field">
+            <label for="destination">Destination</label>
+            <input type="text" id="destination" name="destination" placeholder="Lisbon, Portugal" required minlength="1">
+          </div>
         </div>
-        <div class="badge">AI Travel Planner</div>
-    </header>
 
-    <main class="container">
-        <section class="hero">
-            <div>
-                <p class="eyebrow">PERSONALIZED TRAVEL PLANNING</p>
-                <h1>Plan your next trip<br><span>with Gemini AI.</span></h1>
-                <p class="hero-text">
-                    Compare Zero-Shot, Few-Shot, and Structured Reasoning prompting
-                    techniques and see how each approach creates your itinerary.
-                </p>
-            </div>
-            <div class="hero-card">
-                <div class="mini-icon">✦</div>
-                <strong>3 Prompting Techniques</strong>
-                <p>One traveler profile. Three AI approaches.</p>
-            </div>
-        </section>
+        <div class="field-row">
+          <div class="field field-narrow">
+            <label for="days">Days</label>
+            <input type="number" id="days" name="days" min="1" max="30" value="5" required>
+          </div>
+          <div class="field field-narrow">
+            <label for="budget">Budget (USD)</label>
+            <input type="number" id="budget" name="budget" min="0" step="10" placeholder="1200" required>
+          </div>
+          <div class="field">
+            <label for="travel_style">Travel style</label>
+            <select id="travel_style" name="travel_style" required>
+              <option value="" disabled selected>Choose one</option>
+              <option>Solo</option>
+              <option>Couple</option>
+              <option>Family</option>
+              <option>Friends</option>
+              <option>Business</option>
+            </select>
+          </div>
+        </div>
 
-        <section class="workspace">
-            <div class="form-card">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">TRAVEL PROFILE</p>
-                        <h2>Tell us about your trip</h2>
-                    </div>
-                    <span class="step">01</span>
-                </div>
+        <div class="field">
+          <label for="interests">Interests</label>
+          <textarea id="interests" name="interests" rows="2" placeholder="Food markets, old architecture, slow mornings, live music" required minlength="1"></textarea>
+        </div>
 
-                <form id="travelForm">
-                    <div class="grid two">
-                        <label>
-                            <span>Your Name</span>
-                            <input id="name" type="text" placeholder="e.g. Alex" required>
-                        </label>
+        <fieldset class="stamp-field">
+          <legend>Planning method</legend>
+          <div class="stamps" role="radiogroup" aria-label="Planning method">
+            <label class="stamp">
+              <input type="radio" name="technique" value="zero-shot" checked>
+              <span class="stamp-face">
+                <span class="stamp-name">Zero&#8209;shot</span>
+                <span class="stamp-note">Fresh read, no references</span>
+              </span>
+            </label>
+            <label class="stamp">
+              <input type="radio" name="technique" value="few-shot">
+              <span class="stamp-face">
+                <span class="stamp-name">Few&#8209;shot</span>
+                <span class="stamp-note">Guided by past itineraries</span>
+              </span>
+            </label>
+            <label class="stamp">
+              <input type="radio" name="technique" value="structured">
+              <span class="stamp-face">
+                <span class="stamp-name">Structured</span>
+                <span class="stamp-note">Planned step by step</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
 
-                        <label>
-                            <span>Destination</span>
-                            <input id="destination" type="text" placeholder="e.g. Dubai" required>
-                        </label>
-                    </div>
+        <button type="submit" id="submit-btn" class="submit-btn">
+          <span class="submit-label">Draft the itinerary</span>
+          <span class="submit-spinner" aria-hidden="true"></span>
+        </button>
 
-                    <div class="grid two">
-                        <label>
-                            <span>Number of Days</span>
-                            <input id="days" type="number" min="1" max="30" value="4" required>
-                        </label>
+        <p class="form-status" id="form-error" role="alert" hidden></p>
+      </form>
+    </div>
+  </section>
 
-                        <label>
-                            <span>Budget (USD)</span>
-                            <input id="budget" type="number" min="0" step="50" placeholder="800" required>
-                        </label>
-                    </div>
+  <!-- ============ RESULT (right) ============ -->
+  <section class="panel result-panel" aria-live="polite">
 
-                    <label>
-                        <span>Interests</span>
-                        <input id="interests" type="text"
-                               placeholder="Food, Beaches, Shopping, History" required>
-                        <small>Separate multiple interests with commas.</small>
-                    </label>
+    <div class="result-empty" id="result-empty">
+      <svg viewBox="0 0 120 120" class="empty-art" aria-hidden="true">
+        <path d="M12 78 Q 40 40, 60 60 T 108 42" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1 7" stroke-linecap="round"/>
+        <circle cx="12" cy="78" r="3" fill="currentColor"/>
+        <circle cx="108" cy="42" r="3" fill="currentColor"/>
+        <path d="M100 32 L108 42 L96 46" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Your ticket will appear here once the route is drawn.</p>
+    </div>
 
-                    <label>
-                        <span>Travel Style</span>
-                        <select id="travelStyle" required>
-                            <option value="">Select travel style</option>
-                            <option>Solo</option>
-                            <option>Family</option>
-                            <option>Friends</option>
-                        </select>
-                    </label>
+    <article class="ticket" id="ticket" hidden>
+      <div class="ticket-stub">
+        <p class="stub-eyebrow">Boarding to</p>
+        <h2 class="stub-destination" id="t-destination">—</h2>
+        <dl class="stub-facts">
+          <div><dt>Traveler</dt><dd id="t-name">—</dd></div>
+          <div><dt>Duration</dt><dd id="t-days">—</dd></div>
+          <div><dt>Budget</dt><dd id="t-budget">—</dd></div>
+          <div><dt>Style</dt><dd id="t-style">—</dd></div>
+        </dl>
+        <p class="stub-model">Drafted by <span id="t-model">—</span></p>
+      </div>
 
-                    <div class="technique-heading">
-                        <div>
-                            <p class="eyebrow">PROMPTING TECHNIQUE</p>
-                            <h3>Choose an approach</h3>
-                        </div>
-                    </div>
+      <div class="ticket-perforation" aria-hidden="true"></div>
 
-                    <div class="techniques">
-                        <button type="button" class="technique active" data-technique="zero-shot">
-                            <span class="technique-number">01</span>
-                            <strong>Zero-Shot</strong>
-                            <small>No examples. Gemini receives only the task and traveler profile.</small>
-                        </button>
+      <div class="ticket-body">
+        <div class="ticket-body-scroll" id="t-content"><!-- itinerary renders here --></div>
+        <div class="ticket-actions">
+          <button type="button" class="ghost-btn" id="copy-btn">Copy itinerary</button>
+          <button type="button" class="ghost-btn" id="new-btn">Plan another trip</button>
+        </div>
+      </div>
+    </article>
 
-                        <button type="button" class="technique" data-technique="few-shot">
-                            <span class="technique-number">02</span>
-                            <strong>Few-Shot</strong>
-                            <small>Gemini learns the desired style from sample traveler plans.</small>
-                        </button>
+  </section>
 
-                        <button type="button" class="technique" data-technique="structured">
-                            <span class="technique-number">03</span>
-                            <strong>Structured Reasoning</strong>
-                            <small>Gemini follows explicit planning steps with brief justifications.</small>
-                        </button>
-                    </div>
+</main>
 
-                    <button id="generateBtn" class="generate-btn" type="submit">
-                        <span>Generate Itinerary</span>
-                        <span class="arrow">→</span>
-                    </button>
-                </form>
-            </div>
+<footer class="colophon">
+  <span id="conn-dot" class="conn-dot" title="Checking connection…"></span>
+  <span id="conn-text">Checking Atlas connection…</span>
+</footer>
 
-            <div class="result-card">
-                <div class="result-header">
-                    <div>
-                        <p class="eyebrow">GEMINI OUTPUT</p>
-                        <h2>Your Travel Plan</h2>
-                    </div>
-                    <span id="resultTechnique" class="result-pill">Zero-Shot</span>
-                </div>
-
-                <div id="emptyState" class="empty-state">
-                    <div class="empty-icon">✈</div>
-                    <h3>Your itinerary will appear here</h3>
-                    <p>
-                        Fill in your travel details, select a prompting technique,
-                        and generate your personalized plan.
-                    </p>
-                </div>
-
-                <div id="loadingState" class="loading-state hidden">
-                    <div class="spinner"></div>
-                    <h3>Gemini is planning your trip...</h3>
-                    <p>Creating your personalized itinerary.</p>
-                </div>
-
-                <article id="result" class="result hidden"></article>
-            </div>
-        </section>
-
-        <section class="comparison">
-            <div class="section-heading centered">
-                <div>
-                    <p class="eyebrow">ASSIGNMENT OBJECTIVE</p>
-                    <h2>Compare the prompting techniques</h2>
-                </div>
-            </div>
-
-            <div class="comparison-grid">
-                <div class="info-card">
-                    <span>01</span>
-                    <h3>Zero-Shot</h3>
-                    <p>Tests Gemini's ability to create a useful itinerary without examples.</p>
-                </div>
-                <div class="info-card">
-                    <span>02</span>
-                    <h3>Few-Shot</h3>
-                    <p>Uses examples to guide the structure, tone, and level of personalization.</p>
-                </div>
-                <div class="info-card">
-                    <span>03</span>
-                    <h3>Structured Reasoning</h3>
-                    <p>Uses explicit planning criteria while requesting only concise justifications.</p>
-                </div>
-            </div>
-        </section>
-
-        <footer>
-            <span>AI Travel Planner</span>
-            <span>Built with Python, FastAPI & Gemini API</span>
-        </footer>
-    </main>
-
-    <script src="/static/script.js"></script>
+<script src="/static/script.js"></script>
 </body>
 </html>

@@ -1,142 +1,232 @@
-const form = document.getElementById("travelForm");
-const techniqueButtons = document.querySelectorAll(".technique");
-const generateBtn = document.getElementById("generateBtn");
+(() => {
+  "use strict";
 
-const emptyState = document.getElementById("emptyState");
-const loadingState = document.getElementById("loadingState");
-const result = document.getElementById("result");
-const resultTechnique = document.getElementById("resultTechnique");
+  const form        = document.getElementById("trip-form");
+  const submitBtn   = document.getElementById("submit-btn");
+  const errorBox    = document.getElementById("form-error");
 
-let selectedTechnique = "zero-shot";
+  const resultEmpty = document.getElementById("result-empty");
+  const ticket      = document.getElementById("ticket");
+  const ticketBody  = document.getElementById("t-content");
 
-techniqueButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        techniqueButtons.forEach((item) => item.classList.remove("active"));
-        button.classList.add("active");
-        selectedTechnique = button.dataset.technique;
+  const copyBtn     = document.getElementById("copy-btn");
+  const newBtn      = document.getElementById("new-btn");
 
-        resultTechnique.textContent =
-            selectedTechnique === "zero-shot"
-                ? "Zero-Shot"
-                : selectedTechnique === "few-shot"
-                ? "Few-Shot"
-                : "Structured Reasoning";
+  const connDot     = document.getElementById("conn-dot");
+  const connText    = document.getElementById("conn-text");
+
+  let lastItineraryText = "";
+
+  /* ---------------- connection check ---------------- */
+
+  async function checkHealth() {
+    try {
+      const res = await fetch("/health");
+      if (!res.ok) throw new Error("bad status");
+      const data = await res.json();
+      if (data.gemini_configured) {
+        connDot.className = "conn-dot ok";
+        connText.textContent = `Atlas is ready — drafting with ${data.primary_model}.`;
+      } else {
+        connDot.className = "conn-dot bad";
+        connText.textContent = "Atlas is running, but no Gemini API key is configured yet.";
+      }
+    } catch (err) {
+      connDot.className = "conn-dot bad";
+      connText.textContent = "Can't reach the Atlas server right now.";
+    }
+  }
+
+  checkHealth();
+
+  /* ---------------- helpers ---------------- */
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function clearError() {
+    errorBox.hidden = true;
+    errorBox.textContent = "";
+  }
+
+  function setLoading(isLoading) {
+    submitBtn.disabled = isLoading;
+    submitBtn.classList.toggle("is-loading", isLoading);
+  }
+
+  function formatMoney(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return String(value);
+    return n.toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
     });
-});
+  }
 
-function escapeHtml(value) {
-    return value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+  // Escape raw text before we selectively re-introduce a few markdown-ish tags.
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
-function markdownToHtml(text) {
-    let html = escapeHtml(text);
-
-    html = html.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-    html = html.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-    html = html.replace(/^# (.*)$/gm, "<h1>$1</h1>");
-    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-
-    const lines = html.split("\n");
-    let output = "";
+  // Turn light markdown (headings, **bold**, "- " bullets, blank-line
+  // paragraphs) from the model's plain-text response into simple HTML,
+  // and give "Estimated ... cost" lines their own styled treatment.
+  function renderItinerary(rawText) {
+    const lines = rawText.replace(/\r\n/g, "\n").split("\n");
+    let html = "";
     let inList = false;
 
-    for (const line of lines) {
-        if (/^\s*[-*]\s+/.test(line)) {
-            if (!inList) {
-                output += "<ul>";
-                inList = true;
-            }
-            output += `<li>${line.replace(/^\s*[-*]\s+/, "")}</li>`;
-        } else {
-            if (inList) {
-                output += "</ul>";
-                inList = false;
-            }
-
-            if (line.trim() === "") {
-                continue;
-            }
-
-            if (!line.startsWith("<h")) {
-                output += `<p>${line}</p>`;
-            } else {
-                output += line;
-            }
-        }
-    }
-
-    if (inList) output += "</ul>";
-
-    return output;
-}
-
-form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const payload = {
-        name: document.getElementById("name").value.trim(),
-        destination: document.getElementById("destination").value.trim(),
-        days: Number(document.getElementById("days").value),
-        budget: Number(document.getElementById("budget").value),
-        interests: document.getElementById("interests").value.trim(),
-        travel_style: document.getElementById("travelStyle").value,
-        technique: selectedTechnique
+    const closeList = () => {
+      if (inList) { html += "</ul>"; inList = false; }
     };
 
-    if (!payload.name || !payload.destination || !payload.days ||
-        payload.budget < 0 || !payload.interests || !payload.travel_style) {
-        alert("Please complete all travel details.");
-        return;
+    const inline = (text) => {
+      let t = escapeHtml(text.trim());
+      t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      return t;
+    };
+
+    for (let raw of lines) {
+      const line = raw.trim();
+
+      if (!line) { closeList(); continue; }
+
+      const headingMatch = line.match(/^(#{1,3}\s*)?(Day\s+\d+.*)$/i);
+      const isHeading = /^#{1,3}\s/.test(line) || /^\*{0,2}Day\s+\d+/i.test(line);
+
+      if (isHeading) {
+        closeList();
+        const text = line.replace(/^#{1,3}\s*/, "").replace(/\*\*/g, "");
+        html += `<h3>${escapeHtml(text)}</h3>`;
+        continue;
+      }
+
+      if (/^[-*]\s+/.test(line)) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += `<li>${inline(line.replace(/^[-*]\s+/, ""))}</li>`;
+        continue;
+      }
+
+      if (/estimated.*cost/i.test(line)) {
+        closeList();
+        html += `<p class="day-cost">${inline(line)}</p>`;
+        continue;
+      }
+
+      closeList();
+      html += `<p>${inline(line)}</p>`;
+    }
+    closeList();
+
+    return html || `<p>${escapeHtml(rawText)}</p>`;
+  }
+
+  /* ---------------- form submit ---------------- */
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearError();
+
+    const formData = new FormData(form);
+    const technique = formData.get("technique");
+
+    if (!technique) {
+      showError("Pick a planning method before drafting.");
+      return;
     }
 
-    emptyState.classList.add("hidden");
-    result.classList.add("hidden");
-    loadingState.classList.remove("hidden");
-    generateBtn.disabled = true;
-    generateBtn.querySelector("span").textContent = "Generating...";
+    const payload = {
+      name: (formData.get("name") || "").trim(),
+      destination: (formData.get("destination") || "").trim(),
+      days: parseInt(formData.get("days"), 10),
+      budget: parseFloat(formData.get("budget")),
+      interests: (formData.get("interests") || "").trim(),
+      travel_style: formData.get("travel_style") || "",
+      technique,
+    };
+
+    if (!payload.name || !payload.destination || !payload.interests || !payload.travel_style) {
+      showError("A few fields still need filling in.");
+      return;
+    }
+    if (!Number.isFinite(payload.days) || payload.days < 1 || payload.days > 30) {
+      showError("Trip length should be between 1 and 30 days.");
+      return;
+    }
+    if (!Number.isFinite(payload.budget) || payload.budget < 0) {
+      showError("Budget should be a non-negative number.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-        const response = await fetch("/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
+      const res = await fetch("/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        const data = await response.json();
+      const data = await res.json().catch(() => null);
 
-        if (!response.ok) {
-            throw new Error(data.detail || "Something went wrong.");
-        }
+      if (!res.ok) {
+        const detail = (data && data.detail) ? data.detail : `Request failed (${res.status}).`;
+        throw new Error(detail);
+      }
 
-        resultTechnique.textContent =
-            selectedTechnique === "zero-shot"
-                ? "Zero-Shot"
-                : selectedTechnique === "few-shot"
-                ? "Few-Shot"
-                : "Structured Reasoning";
+      lastItineraryText = data.itinerary || "";
 
-        result.innerHTML = markdownToHtml(data.itinerary);
+      document.getElementById("t-destination").textContent = payload.destination;
+      document.getElementById("t-name").textContent = payload.name;
+      document.getElementById("t-days").textContent = `${payload.days} day${payload.days === 1 ? "" : "s"}`;
+      document.getElementById("t-budget").textContent = formatMoney(payload.budget);
+      document.getElementById("t-style").textContent = payload.travel_style;
+      document.getElementById("t-model").textContent = data.model || "Atlas";
 
-        loadingState.classList.add("hidden");
-        result.classList.remove("hidden");
-    } catch (error) {
-        loadingState.classList.add("hidden");
-        result.classList.remove("hidden");
-        result.innerHTML = `
-            <h3>Unable to generate itinerary</h3>
-            <p><strong>Error:</strong> ${escapeHtml(error.message)}</p>
-            <p>Please check your Gemini API key and try again.</p>
-        `;
+      ticketBody.innerHTML = renderItinerary(lastItineraryText);
+
+      resultEmpty.hidden = true;
+      ticket.hidden = false;
+      ticket.classList.remove("ticket");
+      void ticket.offsetWidth; // restart the reveal animation
+      ticket.classList.add("ticket");
+      ticket.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    } catch (err) {
+      showError(err.message || "Something went wrong while drafting the trip.");
     } finally {
-        generateBtn.disabled = false;
-        generateBtn.querySelector("span").textContent = "Generate Itinerary";
+      setLoading(false);
     }
-});
+  });
+
+  /* ---------------- ticket actions ---------------- */
+
+  copyBtn.addEventListener("click", async () => {
+    if (!lastItineraryText) return;
+    try {
+      await navigator.clipboard.writeText(lastItineraryText);
+      copyBtn.textContent = "Copied";
+      copyBtn.classList.add("is-copied");
+      setTimeout(() => {
+        copyBtn.textContent = "Copy itinerary";
+        copyBtn.classList.remove("is-copied");
+      }, 1800);
+    } catch (err) {
+      showError("Couldn't copy — your browser may be blocking clipboard access.");
+    }
+  });
+
+  newBtn.addEventListener("click", () => {
+    ticket.hidden = true;
+    resultEmpty.hidden = false;
+    form.reset();
+    document.getElementById("name").focus();
+  });
+
+})();
